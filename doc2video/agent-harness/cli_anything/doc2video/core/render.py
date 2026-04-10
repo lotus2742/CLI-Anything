@@ -18,6 +18,23 @@ from typing import Optional
 # Public API
 # ---------------------------------------------------------------------------
 
+def _ensure_marp() -> bool:
+    """Return True if marp is available (install silently if not)."""
+    if shutil.which("marp"):
+        return True
+    if not shutil.which("npm"):
+        return False
+    try:
+        print("[render] Installing marp-cli (first run, ~10s)...")
+        subprocess.run(
+            ["npm", "install", "-g", "@marp-team/marp-cli", "--prefer-offline"],
+            capture_output=True, timeout=120, check=True,
+        )
+        return bool(shutil.which("marp"))
+    except Exception:
+        return False
+
+
 def render_frames(
     text_file: str,
     output_dir: str,
@@ -31,8 +48,8 @@ def render_frames(
     """Try Marp → Playwright → Pillow, return result dict."""
     os.makedirs(output_dir, exist_ok=True)
 
-    # 1. Marp CLI
-    if shutil.which("marp"):
+    # 1. Marp CLI (auto-install if npm available)
+    if _ensure_marp():
         try:
             return _render_marp(
                 text_file, output_dir, width, height, fps, style, audio_file, secs_per_slide

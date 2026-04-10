@@ -119,8 +119,8 @@ cli-anything-doc2video render <文件> --frames-dir /tmp/frames  # 仅渲染帧
 1. **首次运行**需要安装依赖：
    ```bash
    cd doc2video/agent-harness && pip install -e .
-   npm install -g @marp-team/marp-cli
    ```
+   Marp CLI 会在首次渲染时**自动安装**（需要 npm），无需手动操作。
 
 2. **TTS 需要网络**（调用微软 edge-tts 服务）。离线时加 `--no-tts`。
 

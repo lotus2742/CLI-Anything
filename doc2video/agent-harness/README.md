@@ -12,12 +12,11 @@ Closes #208.
 git clone https://github.com/lotus2742/CLI-Anything.git
 cd CLI-Anything/doc2video/agent-harness
 pip install -e .
-
-# Install Playwright browser (for high-quality HTML rendering)
-playwright install chromium
 ```
 
-Prerequisites: Python 3.10+, `ffmpeg` in PATH.
+Prerequisites: Python 3.10+, `ffmpeg` in PATH, `npm` (Node.js).
+
+> **Marp CLI** is auto-installed on first run — no manual setup needed.
 
 ## Quick Start
 
