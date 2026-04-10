@@ -2,8 +2,7 @@
 
 Renderer priority:
   1. Marp CLI  (npm install -g @marp-team/marp-cli)
-  2. Playwright HTML (fallback)
-  3. Pillow    (final fallback)
+  2. Pillow    (fallback)
 """
 import math
 import os
@@ -91,7 +90,7 @@ def render_frames(
                 marp_bin=marp_bin,
             )
         except Exception as e:
-            print(f"[render] Marp failed ({e}), trying Playwright...")
+            print(f"[render] Marp failed ({e}), falling back to Pillow...")
 
     # 2. Pillow
     return _render_pillow(
@@ -109,20 +108,22 @@ def _render_marp(
 ) -> dict:
     """Use marp-cli to render each slide as PNG, then duplicate frames."""
 
-    # Ensure input is valid Marp Markdown (inject frontmatter if missing)
+    # Marp requires .md extension — always write to a temp .md file
     src = Path(text_file).read_text(encoding="utf-8")
+    theme = _style_to_marp_theme(style)
     if not src.strip().startswith("---"):
-        theme = _style_to_marp_theme(style)
         frontmatter = (
             f"---\nmarp: true\ntheme: {theme}\npaginate: true\n"
             "style: |\n  section {\n"
             "    font-family: 'PingFang SC', 'Microsoft YaHei', "
             "'Hiragino Sans GB', sans-serif;\n  }\n---\n\n"
         )
-        marp_file = text_file + ".marp.md"
-        Path(marp_file).write_text(frontmatter + src, encoding="utf-8")
+        content = frontmatter + src
     else:
-        marp_file = text_file
+        content = src
+
+    marp_file = str(Path(text_file).with_suffix("")) + ".marp.md"
+    Path(marp_file).write_text(content, encoding="utf-8")
 
     # Run marp --images png
     result = subprocess.run(
