@@ -25,14 +25,14 @@ def _find_marp() -> Optional[str]:
     if p:
         return p
 
-    # 2. Look in npm global bin directory
+    # 2. Look in npm global prefix bin directory (works with all npm versions)
     try:
         r = subprocess.run(
-            ["npm", "bin", "-g"], capture_output=True, text=True, timeout=10
+            ["npm", "prefix", "-g"], capture_output=True, text=True, timeout=10
         )
-        npm_bin = r.stdout.strip()
-        if npm_bin:
-            candidate = os.path.join(npm_bin, "marp")
+        npm_prefix = r.stdout.strip()
+        if npm_prefix:
+            candidate = os.path.join(npm_prefix, "bin", "marp")
             if os.path.isfile(candidate):
                 return candidate
     except Exception:
@@ -43,6 +43,7 @@ def _find_marp() -> Optional[str]:
         os.path.expanduser("~/.npm-global/bin/marp"),
         "/usr/local/bin/marp",
         "/opt/homebrew/bin/marp",
+        "/opt/homebrew/opt/node/bin/marp",
     ]:
         if os.path.isfile(candidate):
             return candidate
