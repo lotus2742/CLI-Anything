@@ -15,18 +15,115 @@
 
 阅读用户提供的文档，按以下规则生成 `/tmp/slides_<时间戳>.md`：
 
-**文件开头必须有 Marp frontmatter：**
+**文件开头必须有 Marp frontmatter（包含完整自定义 CSS，直接复制以下模板）：**
+
 ```markdown
 ---
 marp: true
 theme: default
 paginate: true
 style: |
+  /* ── 全局 ── */
   section {
     font-family: 'PingFang SC', 'Microsoft YaHei', 'Hiragino Sans GB', sans-serif;
+    background: #0D1117;
+    color: #CDD9E5;
+    padding: 48px 64px;
   }
+  /* ── 标题 ── */
+  section h1 {
+    font-size: 1.75em;
+    font-weight: 700;
+    color: #FFFFFF;
+    border-left: 5px solid #58A6FF;
+    padding-left: 18px;
+    margin-bottom: 28px;
+    line-height: 1.3;
+  }
+  /* ── 要点列表 ── */
+  section ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  section ul li {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    font-size: 0.88em;
+    line-height: 1.65;
+    color: #ADBAC7;
+  }
+  section ul li:last-child { border-bottom: none; }
+  section ul li::before {
+    content: '▸';
+    color: #58A6FF;
+    font-size: 1em;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  /* ── 代码块 ── */
+  section code {
+    background: rgba(88,166,255,0.12);
+    color: #79C0FF;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 0.85em;
+  }
+  section pre {
+    background: #161B22;
+    border: 1px solid #30363D;
+    border-radius: 8px;
+    padding: 16px 20px;
+  }
+  section pre code {
+    background: none;
+    color: #E6EDF3;
+    font-size: 0.82em;
+  }
+  /* ── 页码 ── */
+  section::after {
+    color: rgba(255,255,255,0.25);
+    font-size: 0.7em;
+  }
+  /* ── lead 封面页 / 过渡页 ── */
+  section.lead {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    background: linear-gradient(135deg, #0D1117 0%, #161B22 60%, #1C2128 100%);
+  }
+  section.lead h1 {
+    font-size: 2.4em;
+    border-left: 6px solid #58A6FF;
+    padding-left: 24px;
+    color: #FFFFFF;
+    margin-bottom: 20px;
+  }
+  section.lead p {
+    font-size: 1em;
+    color: #8B949E;
+    padding-left: 30px;
+  }
+  /* ── invert 强调页 ── */
+  section.invert {
+    background: #58A6FF;
+    color: #0D1117;
+  }
+  section.invert h1 {
+    color: #0D1117;
+    border-left-color: #0D1117;
+  }
+  section.invert ul li { color: #1C2128; border-bottom-color: rgba(0,0,0,0.12); }
+  section.invert ul li::before { color: #0D1117; }
 ---
 ```
+
+> ⚠️ **必须完整复制上面的 frontmatter**，包括所有 CSS，不能省略或简化。
+> 主题统一用 `default`（自定义 CSS 已覆盖所有视觉），无需切换 `gaia`/`uncover`。
 
 **内容规则：**
 - 总页数：8-12 页（视频目标时长 6-8 分钟）
