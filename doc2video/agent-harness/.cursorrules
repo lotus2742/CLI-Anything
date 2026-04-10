@@ -3,6 +3,7 @@
 ## 项目说明
 本项目是 CLI-Anything 生态中的 doc2video harness。
 将文档（docx/md/pdf/txt）转换为带配音的 MP4 视频。
+渲染引擎：**Marp CLI**（专业 Markdown PPT 渲染，无需手写 CSS）。
 
 ---
 
@@ -14,20 +15,34 @@
 
 阅读用户提供的文档，按以下规则生成 `/tmp/slides_<时间戳>.md`：
 
+**文件开头必须有 Marp frontmatter：**
+```markdown
+---
+marp: true
+theme: default
+paginate: true
+style: |
+  section {
+    font-family: 'PingFang SC', 'Microsoft YaHei', 'Hiragino Sans GB', sans-serif;
+  }
+---
+```
+
 **内容规则：**
 - 总页数：8-12 页（视频目标时长 6-8 分钟）
 - 第一页：概览/引言（介绍文档主题和结构）
-- 中间页：每页聚焦一个核心概念或要点
-- 最后一页：总结（3-5 条关键结论）
+- 中间页：每页聚焦一个核心概念或要点，**5-8 条要点**（不能只有3条，下半部分不能空着）
+- 最后一页：总结（5-7 条关键结论）
 
 **每页格式（严格遵守）：**
-```
+```markdown
 # 页面标题（一句话，≤ 20 字）
 
-要点一（≤ 30 字，口语化，适合 TTS 朗读）
-要点二（≤ 30 字）
-要点三（≤ 30 字）
-（可选）要点四、五
+- 要点一（≤ 35 字，口语化，适合 TTS 朗读）
+- 要点二（≤ 35 字）
+- 要点三（≤ 35 字）
+- 要点四（≤ 35 字）
+- 要点五（≤ 35 字）
 
 ---
 ```
@@ -36,26 +51,24 @@
 - 口语化表达，避免堆砌专业术语
 - 每条要点像在"讲给人听"，不是"写给人看"
 - 代码片段用反引号包裹，控制在 1-2 行以内
-- 总文字量控制在 1000-1200 字（对应约 7 分钟 TTS）
+- 总文字量控制在 1200-1500 字（对应约 7-8 分钟 TTS）
+- **每页至少 5 条要点**，不足的补充延伸说明或背景信息
+
+**主题选择：**
+| 场景 | Marp 主题 |
+|------|---------|
+| 技术文档、代码讲解 | `gaia` |
+| 商业报告、产品介绍 | `default` |
+| 学术内容、论文解读 | `uncover` |
+| 未指定 | `default` |
 
 ### Step 2：生成视频
 
 ```bash
 cli-anything-doc2video process /tmp/slides_<时间戳>.md \
   -o ./output_<时间戳>.mp4 \
-  --style dark \
   --voice zh-CN-XiaoxiaoNeural
 ```
-
-**主题选择建议：**
-| 场景 | 推荐主题 |
-|------|---------|
-| 技术文档、代码讲解 | `dark` |
-| 商业报告、产品介绍 | `default` |
-| 学术内容、论文解读 | `minimal` |
-| 展示、演讲 | `gradient` |
-
-用户如未指定主题，默认使用 `dark`。
 
 **可用中文声音：**
 | 声音 ID | 特点 |
@@ -84,10 +97,8 @@ cli-anything-doc2video process <文件> -o output.mp4
 # 全参数
 cli-anything-doc2video process <文件> \
   -o output.mp4 \
-  --style [default|dark|minimal|gradient] \
   --voice <声音ID> \
   --fps 24 \
-  --quality high \
   --no-tts       # 仅生成无声视频
 
 # JSON 模式（Agent 解析结果用）
@@ -108,13 +119,15 @@ cli-anything-doc2video render <文件> --frames-dir /tmp/frames  # 仅渲染帧
 1. **首次运行**需要安装依赖：
    ```bash
    cd doc2video/agent-harness && pip install -e .
-   playwright install chromium
+   npm install -g @marp-team/marp-cli
    ```
 
 2. **TTS 需要网络**（调用微软 edge-tts 服务）。离线时加 `--no-tts`。
 
 3. **输出路径用绝对路径**，避免找不到文件。
 
-4. **文档太长时**先提炼再生成，不要原文照搬——原文直接转会导致内容过多、视频超长、可读性差。
+4. **文档太长时**先提炼再生成，不要原文照搬。
 
-5. **slides.md 分页符**是单独一行的 `---`，不要用其他分隔符。
+5. **slides.md 分页符**是单独一行的 `---`，Marp 用它来分页。
+
+6. **frontmatter 的 `---` 不算分页符**，只有 frontmatter 结束后的 `---` 才是分页。
