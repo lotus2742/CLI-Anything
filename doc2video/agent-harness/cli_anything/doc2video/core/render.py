@@ -136,8 +136,19 @@ def _render_marp(
         # LLM wrote frontmatter, no --style override → respect LLM's choice
         content = src
 
-    marp_file = str(Path(text_file).with_suffix("")) + ".marp.md"
-    Path(marp_file).write_text(content, encoding="utf-8")
+    # If the input is already a .marp.md and we didn't modify content, reuse it
+    src_path = Path(text_file)
+    if src_path.name.endswith(".marp.md") and content == src:
+        marp_file = str(src_path)
+    else:
+        # Strip all extensions to get the stem, then write .marp.md
+        stem = src_path.name
+        for suffix in (".marp.md", ".md", ".txt"):
+            if stem.endswith(suffix):
+                stem = stem[: -len(suffix)]
+                break
+        marp_file = str(src_path.parent / (stem + ".marp.md"))
+        Path(marp_file).write_text(content, encoding="utf-8")
 
     # Marp --output is a file *prefix*, not a directory.
     # e.g. --output /tmp/frames/slide  → /tmp/frames/slide.001, slide.002 ...
