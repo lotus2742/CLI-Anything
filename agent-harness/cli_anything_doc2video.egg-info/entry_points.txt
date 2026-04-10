@@ -1,0 +1,2 @@
+[console_scripts]
+cli-anything-doc2video = cli_anything.doc2video.main:cli

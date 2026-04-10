@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cli-anything-doc2video"
+version = "1.0.0"
+description = "Convert documents (text, PDF, Markdown) to narrated MP4 videos via CLI"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "click>=8.0",
+    "prompt-toolkit>=3.0",
+    "edge-tts>=7.0",
+    "Pillow>=10.0",
+    "pypdf>=4.0",
+    "python-docx>=1.0",
+    "playwright>=1.40",
+    "markdown-it-py>=3.0",
+]
+
+[project.scripts]
+cli-anything-doc2video = "cli_anything.doc2video.main:cli"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["cli_anything*"]

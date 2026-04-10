@@ -1,0 +1,267 @@
+# Cursor Agent Rules — doc2video
+
+## 项目说明
+本项目是 CLI-Anything 生态中的 doc2video harness。
+将文档（docx/md/pdf/txt）转换为带配音的 MP4 视频。
+渲染引擎：**Marp CLI**（专业 Markdown PPT 渲染，无需手写 CSS）。
+
+---
+
+## 🎬 doc2video 完整工作流
+
+当用户说"把这个文档做成视频" / "生成视频" / "转视频"时，**严格按以下步骤执行**，不要跳步：
+
+### Step 1：读取并提炼文档
+
+阅读用户提供的文档，按以下规则生成 `/tmp/slides_<时间戳>.md`：
+
+**文件开头必须有 Marp frontmatter（包含完整自定义 CSS，直接复制以下模板）：**
+
+```markdown
+---
+marp: true
+theme: default
+paginate: true
+style: |
+  /* ── 全局 ── */
+  section {
+    font-family: 'PingFang SC', 'Microsoft YaHei', 'Hiragino Sans GB', sans-serif;
+    background: #0D1117;
+    color: #CDD9E5;
+    padding: 48px 64px;
+  }
+  /* ── 标题 ── */
+  section h1 {
+    font-size: 1.75em;
+    font-weight: 700;
+    color: #FFFFFF;
+    border-left: 5px solid #58A6FF;
+    padding-left: 18px;
+    margin-bottom: 28px;
+    line-height: 1.3;
+  }
+  /* ── 要点列表 ── */
+  section ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  section ul li {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    font-size: 0.88em;
+    line-height: 1.65;
+    color: #ADBAC7;
+  }
+  section ul li:last-child { border-bottom: none; }
+  section ul li::before {
+    content: '▸';
+    color: #58A6FF;
+    font-size: 1em;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  /* ── 代码块 ── */
+  section code {
+    background: rgba(88,166,255,0.12);
+    color: #79C0FF;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 0.85em;
+  }
+  section pre {
+    background: #161B22;
+    border: 1px solid #30363D;
+    border-radius: 8px;
+    padding: 16px 20px;
+  }
+  section pre code {
+    background: none;
+    color: #E6EDF3;
+    font-size: 0.82em;
+  }
+  /* ── 页码 ── */
+  section::after {
+    color: rgba(255,255,255,0.25);
+    font-size: 0.7em;
+  }
+  /* ── lead 封面页 / 过渡页 ── */
+  section.lead {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    background: linear-gradient(135deg, #0D1117 0%, #161B22 60%, #1C2128 100%);
+  }
+  section.lead h1 {
+    font-size: 2.4em;
+    border-left: 6px solid #58A6FF;
+    padding-left: 24px;
+    color: #FFFFFF;
+    margin-bottom: 20px;
+  }
+  section.lead p {
+    font-size: 1em;
+    color: #8B949E;
+    padding-left: 30px;
+  }
+  /* ── invert 强调页 ── */
+  section.invert {
+    background: #58A6FF;
+    color: #0D1117;
+  }
+  section.invert h1 {
+    color: #0D1117;
+    border-left-color: #0D1117;
+  }
+  section.invert ul li { color: #1C2128; border-bottom-color: rgba(0,0,0,0.12); }
+  section.invert ul li::before { color: #0D1117; }
+---
+```
+
+> ⚠️ **必须完整复制上面的 frontmatter**，包括所有 CSS，不能省略或简化。
+> 主题统一用 `default`（自定义 CSS 已覆盖所有视觉），无需切换 `gaia`/`uncover`。
+
+**内容规则：**
+- 总页数：8-12 页（视频目标时长 6-8 分钟）
+- 第一页：概览/引言（介绍文档主题和结构）
+- 中间页：每页聚焦一个核心概念或要点，**5-8 条要点**（不能只有3条，下半部分不能空着）
+- 最后一页：总结（5-7 条关键结论）
+
+**每页格式（严格遵守）：**
+```markdown
+# 页面标题（一句话，≤ 20 字）
+
+- 要点一（≤ 35 字，口语化，适合 TTS 朗读）
+- 要点二（≤ 35 字）
+- 要点三（≤ 35 字）
+- 要点四（≤ 35 字）
+- 要点五（≤ 35 字）
+
+---
+```
+
+**写作要求：**
+- 口语化表达，避免堆砌专业术语
+- 每条要点像在"讲给人听"，不是"写给人看"
+- 代码片段用反引号包裹，控制在 1-2 行以内
+- 总文字量控制在 1200-1500 字（对应约 7-8 分钟 TTS）
+- **每页至少 5 条要点**，不足的补充延伸说明或背景信息
+
+**主题选择（LLM 根据内容自主决策，写入 frontmatter）：**
+
+> 用户未指定 `--style` 时，根据文档内容选最合适的主题；用户指定了则以 `--style` 为准。
+
+| 文档类型 | Marp 主题 | 视觉风格 |
+|---------|---------|--------|
+| 技术文档、AI/代码讲解 | `gaia` | 暗色，代码高亮清晰 |
+| 产品介绍、商业报告 | `default` | 清爽白底，通用 |
+| 学术论文、深度解读 | `uncover` | 现代简约，适合图文 |
+| 不确定 | `default` | 最安全的选择 |
+
+**页面排版布局（LLM 根据页面用途自主选择）：**
+
+在每页开头用 HTML 注释指定布局，Marp 会自动应用：
+
+```markdown
+<!-- _class: lead -->
+```
+
+| 页面用途 | 推荐 class | 效果 |
+|---------|-----------|------|
+| 封面页（第1页） | `lead` | 大字居中，标题突出 |
+| 章节过渡页 | `lead invert` | 反色强调，视觉分隔 |
+| 普通内容页 | 不加（默认） | 标准列表布局 |
+| 重要警告/结论 | `invert` | 反色背景，强调感 |
+| 最后总结页 | `lead` | 大字，收尾有力 |
+
+示例：
+```markdown
+<!-- _class: lead -->
+
+# 今天我们聊什么？
+
+AI Agent 的设计模式与最佳实践
+
+---
+
+<!-- 普通内容页不需要 class -->
+
+# 核心概念
+
+- 要点一
+- 要点二
+```
+
+### Step 2：生成视频
+
+```bash
+cli-anything-doc2video process /tmp/slides_<时间戳>.md \
+  -o ./output_<时间戳>.mp4 \
+  --voice zh-CN-XiaoxiaoNeural
+```
+
+**可用中文声音：**
+| 声音 ID | 特点 |
+|---------|------|
+| `zh-CN-XiaoxiaoNeural` | 女声，温柔自然（**默认**）|
+| `zh-CN-YunxiNeural` | 男声，沉稳清晰 |
+| `zh-CN-XiaohanNeural` | 女声，干练 |
+| `zh-CN-YunjianNeural` | 男声，有力 |
+
+### Step 3：汇报结果
+
+告知用户：
+- 视频输出路径（绝对路径）
+- 幻灯片页数
+- 预计时长（页数 × 40 秒，估算值）
+- 预览命令：`open output_<时间戳>.mp4`
+
+---
+
+## 🔧 CLI 参考
+
+```bash
+# 基础用法
+cli-anything-doc2video process <文件> -o output.mp4
+
+# 全参数
+cli-anything-doc2video process <文件> \
+  -o output.mp4 \
+  --voice <声音ID> \
+  --fps 24 \
+  --no-tts       # 仅生成无声视频
+
+# JSON 模式（Agent 解析结果用）
+cli-anything-doc2video --json process <文件> -o output.mp4
+
+# 单独调用子命令
+cli-anything-doc2video parse <文件>          # 仅解析
+cli-anything-doc2video tts <文件> -o out.mp3 # 仅生成语音
+cli-anything-doc2video render <文件> --frames-dir /tmp/frames  # 仅渲染帧
+```
+
+**支持格式：** `.md` `.markdown` `.docx` `.doc` `.pdf` `.txt`
+
+---
+
+## ⚠️ 注意事项
+
+1. **首次运行**需要安装依赖：
+   ```bash
+   cd doc2video/agent-harness && pip install -e .
+   ```
+   Marp CLI 会在首次渲染时**自动安装**（需要 npm），无需手动操作。不需要安装 Playwright。
+
+2. **TTS 需要网络**（调用微软 edge-tts 服务）。离线时加 `--no-tts`。
+
+3. **输出路径用绝对路径**，避免找不到文件。
+
+4. **文档太长时**先提炼再生成，不要原文照搬。
+
+5. **slides.md 分页符**是单独一行的 `---`，Marp 用它来分页。
+
+6. **frontmatter 的 `---` 不算分页符**，只有 frontmatter 结束后的 `---` 才是分页。
