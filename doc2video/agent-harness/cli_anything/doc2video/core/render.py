@@ -8,7 +8,7 @@ from typing import Optional
 
 
 # ---------------------------------------------------------------------------
-# HTML slide templates
+# HTML slide template — 严格约束布局，防溢出
 # ---------------------------------------------------------------------------
 
 SLIDE_TEMPLATE = """<!DOCTYPE html>
@@ -18,152 +18,188 @@ SLIDE_TEMPLATE = """<!DOCTYPE html>
 <style>
   * {{ box-sizing: border-box; margin: 0; padding: 0; }}
 
-  body {{
+  html, body {{
     width: 1280px;
     height: 720px;
     overflow: hidden;
-    font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
+  }}
+
+  body {{
+    font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
+                 'Noto Sans CJK SC', 'WenQuanYi Micro Hei', sans-serif;
     background: {bg};
     position: relative;
   }}
 
-  /* 双色左侧竖线（vlog-maker 风格） */
-  .bar-blue {{
+  /* ── 双色左侧竖线 ── */
+  .bar {{
     position: absolute;
-    left: 60px; top: 60px; bottom: 60px;
-    width: 8px;
+    left: 56px;
+    top: 50px;
+    bottom: 50px;
+    width: 6px;
     background: {accent};
-    border-radius: 4px;
+    border-radius: 3px;
   }}
-  .bar-gold {{
+  .bar2 {{
     position: absolute;
-    left: 76px; top: 60px; bottom: 60px;
-    width: 8px;
+    left: 68px;
+    top: 50px;
+    bottom: 50px;
+    width: 6px;
     background: {gold};
-    border-radius: 4px;
+    border-radius: 3px;
   }}
 
-  /* 标签 pill */
+  /* ── 标签 pill ── */
   .tag {{
     position: absolute;
-    top: 60px; left: 104px;
+    top: 52px;
+    left: 96px;
     background: {accent};
     color: {bg};
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 700;
-    padding: 5px 18px;
-    border-radius: 4px;
-    letter-spacing: 1px;
+    padding: 4px 16px;
+    border-radius: 3px;
+    letter-spacing: 1.5px;
+    white-space: nowrap;
   }}
 
-  /* 标题区 */
+  /* ── 标题 ── */
   .title {{
     position: absolute;
-    top: 108px; left: 104px; right: 80px;
+    top: 100px;
+    left: 96px;
+    right: 72px;
     font-size: {title_size}px;
     font-weight: 700;
     color: {title_color};
-    line-height: 1.3;
-  }}
-
-  /* 分隔线 */
-  .divider {{
-    position: absolute;
-    top: 210px; left: 104px; right: 80px;
-    height: 2px;
-    background: {accent};
-    opacity: 0.25;
-  }}
-
-  /* 正文 */
-  .body {{
-    position: absolute;
-    top: 234px; left: 104px; right: 80px; bottom: 80px;
-    font-size: {body_size}px;
-    color: {body_color};
-    line-height: 1.9;
+    line-height: 1.35;
+    word-break: break-all;
+    overflow-wrap: break-word;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
     overflow: hidden;
   }}
 
-  /* 要点列表 */
+  /* ── 分隔线 ── */
+  .divider {{
+    position: absolute;
+    top: 196px;
+    left: 96px;
+    right: 72px;
+    height: 1px;
+    background: {accent};
+    opacity: 0.3;
+  }}
+
+  /* ── 正文容器 ── */
+  .body {{
+    position: absolute;
+    top: 216px;
+    left: 96px;
+    right: 72px;
+    bottom: 56px;
+    overflow: hidden;
+  }}
+
+  /* ── 列表样式 ── */
   .body ul {{
     list-style: none;
     padding: 0;
+    margin: 0;
   }}
+
   .body ul li {{
-    padding: 8px 0 8px 28px;
-    position: relative;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-  }}
-  .body ul li::before {{
-    content: '';
-    position: absolute;
-    left: 0; top: 50%;
-    transform: translateY(-50%);
-    width: 10px; height: 10px;
-    background: {accent};
-    border-radius: 2px;
-  }}
-  .body ul li:nth-child(2n)::before {{ background: {gold}; }}
-  .body ul li:nth-child(3n)::before {{ background: {green}; }}
-
-  /* 高亮卡片 */
-  .highlight {{
-    background: {card_bg};
-    border-left: 5px solid {gold};
-    padding: 16px 20px;
-    border-radius: 0 8px 8px 0;
-    margin-top: 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 9px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
     font-size: {body_size}px;
-    color: {gold};
-    font-weight: 600;
+    color: {body_color};
+    line-height: 1.65;
+    word-break: break-all;
+    overflow-wrap: break-word;
   }}
 
-  /* 代码块 */
+  .body ul li:last-child {{
+    border-bottom: none;
+  }}
+
+  .body ul li .dot {{
+    flex-shrink: 0;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    margin-top: 7px;
+  }}
+
+  .body ul li:nth-child(3n+1) .dot {{ background: {accent}; }}
+  .body ul li:nth-child(3n+2) .dot {{ background: {gold}; }}
+  .body ul li:nth-child(3n+0) .dot {{ background: {green}; }}
+
+  .body ul li .text {{
+    flex: 1;
+    min-width: 0;
+  }}
+
+  /* ── 代码块 ── */
   pre {{
     background: {code_bg};
     color: {code_color};
-    padding: 16px 20px;
-    border-radius: 8px;
+    padding: 14px 18px;
+    border-radius: 6px;
     font-size: {code_size}px;
-    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code',
+                 'Courier New', monospace;
     line-height: 1.6;
-    margin-top: 8px;
+    margin: 6px 0;
     overflow: hidden;
+    word-break: break-all;
+    white-space: pre-wrap;
   }}
+
   code {{
     font-family: 'JetBrains Mono', 'Fira Code', monospace;
     background: {code_bg};
     color: {code_color};
-    padding: 2px 7px;
-    border-radius: 4px;
+    padding: 2px 6px;
+    border-radius: 3px;
     font-size: 0.88em;
   }}
 
-  /* 页码 */
-  .slide-num {{
+  /* ── 页码 ── */
+  .num {{
     position: absolute;
-    right: 72px; bottom: 28px;
-    font-size: 13px;
+    right: 68px;
+    bottom: 22px;
+    font-size: 12px;
     color: {body_color};
-    opacity: 0.3;
+    opacity: 0.28;
     letter-spacing: 1px;
   }}
 </style>
 </head>
 <body>
-  <div class="bar-blue"></div>
-  <div class="bar-gold"></div>
+  <div class="bar"></div>
+  <div class="bar2"></div>
   <div class="tag">{tag}</div>
   <div class="title">{title}</div>
   <div class="divider"></div>
-  <div class="body">{body}</div>
-  <div class="slide-num">{slide_num} / {total_slides}</div>
+  <div class="body">{body_html}</div>
+  <div class="num">{slide_num} / {total_slides}</div>
 </body>
 </html>"""
 
+
+# ---------------------------------------------------------------------------
+# Themes
+# ---------------------------------------------------------------------------
+
 STYLES = {
-    # vlog-maker 同款：深蓝科技风（默认）
     "default": {
         "bg": "#0A0F2E",
         "title_color": "#FFFFFF",
@@ -172,13 +208,12 @@ STYLES = {
         "gold": "#FFD100",
         "green": "#00E596",
         "card_bg": "#101840",
-        "code_bg": "#101840",
+        "code_bg": "#0D1535",
         "code_color": "#00E596",
-        "title_size": 44,
-        "body_size": 24,
-        "code_size": 19,
+        "title_size": 42,
+        "body_size": 23,
+        "code_size": 18,
     },
-    # 深色极简
     "dark": {
         "bg": "#0D1117",
         "title_color": "#F0F6FC",
@@ -189,26 +224,24 @@ STYLES = {
         "card_bg": "#161B22",
         "code_bg": "#161B22",
         "code_color": "#7EE787",
-        "title_size": 44,
-        "body_size": 24,
-        "code_size": 19,
+        "title_size": 42,
+        "body_size": 23,
+        "code_size": 18,
     },
-    # 浅色商务
     "minimal": {
         "bg": "#FAFAFA",
         "title_color": "#111111",
-        "body_color": "#555555",
+        "body_color": "#444444",
         "accent": "#2563EB",
         "gold": "#D97706",
         "green": "#059669",
         "card_bg": "#EEF2FF",
         "code_bg": "#F1F5F9",
         "code_color": "#1E40AF",
-        "title_size": 42,
-        "body_size": 24,
-        "code_size": 19,
+        "title_size": 40,
+        "body_size": 22,
+        "code_size": 17,
     },
-    # 深色渐变（视觉最强）
     "gradient": {
         "bg": "#0F0C29",
         "title_color": "#FFFFFF",
@@ -219,9 +252,9 @@ STYLES = {
         "card_bg": "rgba(255,255,255,0.06)",
         "code_bg": "rgba(255,255,255,0.08)",
         "code_color": "#FFA07A",
-        "title_size": 44,
-        "body_size": 24,
-        "code_size": 19,
+        "title_size": 42,
+        "body_size": 23,
+        "code_size": 18,
     },
 }
 
@@ -240,16 +273,12 @@ def render_frames(
     audio_file: Optional[str] = None,
     secs_per_slide: int = 5,
 ) -> dict:
-    """Render slides using Playwright HTML screenshots.
-
-    Falls back to Pillow if Playwright is unavailable.
-    """
     try:
         return _render_playwright(
             text_file, output_dir, width, height, fps, style, audio_file, secs_per_slide
         )
     except Exception as e:
-        if "playwright" in str(e).lower() or "not found" in str(e).lower():
+        if "playwright" in str(e).lower() or "not found" in str(e).lower() or "module" in str(e).lower():
             return _render_pillow(
                 text_file, output_dir, width, height, fps, style, audio_file, secs_per_slide
             )
@@ -266,9 +295,7 @@ def _render_playwright(
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
-        raise RuntimeError(
-            "playwright not found. Install: pip install playwright && playwright install chromium"
-        )
+        raise RuntimeError("playwright not found")
 
     slides = _parse_slides(text_file)
     s = STYLES.get(style, STYLES["default"])
@@ -279,24 +306,21 @@ def _render_playwright(
     )
 
     frame_index = 0
+    import shutil
     with sync_playwright() as p:
         browser = p.chromium.launch()
         page = browser.new_page(viewport={"width": width, "height": height})
 
         for slide_idx, (title, body) in enumerate(slides):
             html = _build_html(title, body, slide_idx + 1, len(slides), s)
-            page.set_content(html, wait_until="networkidle")
+            page.set_content(html, wait_until="domcontentloaded")
 
-            png_bytes = page.screenshot(type="png")
-            frame_path = os.path.join(output_dir, f"frame_{frame_index:06d}.png")
-            with open(frame_path, "wb") as f:
-                f.write(png_bytes)
+            first_path = os.path.join(output_dir, f"frame_{frame_index:06d}.png")
+            page.screenshot(path=first_path, type="png")
 
-            # Duplicate frame for duration
             for i in range(1, frames_per_slide):
                 dup_path = os.path.join(output_dir, f"frame_{frame_index + i:06d}.png")
-                import shutil
-                shutil.copy2(frame_path, dup_path)
+                shutil.copy2(first_path, dup_path)
 
             frame_index += frames_per_slide
 
@@ -350,26 +374,45 @@ def _render_pillow(
         pass
 
     def hex_to_rgb(h):
+        if not h.startswith("#"):
+            return (50, 50, 80)
         h = h.lstrip("#")
         return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
 
-    frame_index = 0
     import shutil, textwrap
+    frame_index = 0
     for title, body in slides:
-        bg = hex_to_rgb(s["bg"]) if s["bg"].startswith("#") else (245, 245, 250)
+        bg = hex_to_rgb(s["bg"])
         title_c = hex_to_rgb(s["title_color"])
         body_c = hex_to_rgb(s["body_color"])
         accent_c = hex_to_rgb(s["accent"])
+        gold_c = hex_to_rgb(s["gold"])
 
         img = Image.new("RGB", (width, height), bg)
         draw = ImageDraw.Draw(img)
-        pad = 80
-        draw.rectangle([(pad, pad // 2), (pad + 6, height - pad // 2)], fill=accent_c)
-        draw.multiline_text((pad + 28, pad), title, font=font_title, fill=title_c)
-        draw.line([(pad + 28, pad + 70), (width - pad, pad + 70)], fill=accent_c, width=2)
-        if body:
-            wrapped = textwrap.fill(body, width=60)
-            draw.multiline_text((pad + 28, pad + 90), wrapped, font=font_body, fill=body_c, spacing=10)
+        pad = 96
+
+        # Dual bars
+        draw.rectangle([56, 50, 62, height - 50], fill=accent_c)
+        draw.rectangle([68, 50, 74, height - 50], fill=gold_c)
+
+        # Title (wrapped)
+        wrapped_title = textwrap.fill(title, width=36)
+        draw.multiline_text((pad, 100), wrapped_title, font=font_title, fill=title_c)
+        draw.line([(pad, 196), (width - 72, 196)], fill=accent_c, width=1)
+
+        # Body lines as bullets
+        y = 216
+        lines = [l.strip().lstrip("-*•").strip() for l in body.splitlines() if l.strip()]
+        colors = [accent_c, gold_c, hex_to_rgb(s["green"])]
+        for i, line in enumerate(lines):
+            if y > height - 70:
+                break
+            draw.rectangle([pad, y + 6, pad + 9, y + 15], fill=colors[i % 3])
+            wrapped = textwrap.fill(line, width=52)
+            draw.multiline_text((pad + 22, y), wrapped, font=font_body, fill=body_c, spacing=6)
+            line_h = (wrapped.count("\n") + 1) * (s["body_size"] + 6) + 12
+            y += line_h
 
         frame_path = os.path.join(output_dir, f"frame_{frame_index:06d}.png")
         img.save(frame_path, "PNG")
@@ -410,7 +453,6 @@ def _parse_slides(text_file: str) -> list[tuple[str, str]]:
 def _build_html(title: str, body: str, slide_num: int, total: int, s: dict) -> str:
     import html as html_mod
 
-    # Tag: PART 01 / 02 ... or INTRO / SUMMARY
     if slide_num == 1:
         tag = "INTRO"
     elif slide_num == total:
@@ -418,39 +460,25 @@ def _build_html(title: str, body: str, slide_num: int, total: int, s: dict) -> s
     else:
         tag = f"PART  {slide_num - 1:02d}"
 
-    # Code blocks → <pre>
-    body_processed = re.sub(
-        r"```(?:\w+)?\n(.*?)```",
-        lambda m: f"\x00PRE\x00{html_mod.escape(m.group(1))}\x00/PRE\x00",
-        body,
-        flags=re.DOTALL,
-    )
+    # Extract code blocks first
+    code_blocks = {}
+    def extract_code(m):
+        key = f"\x00CODE{len(code_blocks)}\x00"
+        code_blocks[key] = f"<pre>{html_mod.escape(m.group(1))}</pre>"
+        return key
 
-    # Split into lines, build list items or plain paragraphs
-    lines = body_processed.splitlines()
-    has_bullets = any(l.strip().startswith(("-", "*", "•")) for l in lines if l.strip())
+    body_clean = re.sub(r"```(?:\w+)?\n?(.*?)```", extract_code, body, flags=re.DOTALL)
 
-    if has_bullets:
-        items = []
-        for line in lines:
-            line = line.strip().lstrip("-*•").strip()
-            if line:
-                items.append(f"<li>{html_mod.escape(line)}</li>")
-        body_html = "<ul>" + "".join(items) + "</ul>"
-    else:
-        # Auto-convert non-empty lines to bullet list
-        items = []
-        for line in lines:
-            line = line.strip()
-            if line and not line.startswith("\x00PRE\x00"):
-                items.append(f"<li>{html_mod.escape(line)}</li>")
-            elif line.startswith("\x00PRE\x00"):
-                code = line.replace("\x00PRE\x00", "").replace("\x00/PRE\x00", "")
-                items.append(f"<pre>{code}</pre>")
-        body_html = "<ul>" + "".join(items) + "</ul>" if items else ""
+    # Build list items from lines
+    lines = [l.strip().lstrip("-*•").strip() for l in body_clean.splitlines() if l.strip()]
+    items_html = ""
+    for line in lines:
+        if line.startswith("\x00CODE"):
+            items_html += code_blocks.get(line, "")
+        else:
+            items_html += f'<li><span class="dot"></span><span class="text">{html_mod.escape(line)}</span></li>'
 
-    # Restore pre blocks
-    body_html = body_html.replace("\x00PRE\x00", "<pre>").replace("\x00/PRE\x00", "</pre>")
+    body_html = f"<ul>{items_html}</ul>" if items_html else ""
 
     return SLIDE_TEMPLATE.format(
         bg=s["bg"],
@@ -459,7 +487,6 @@ def _build_html(title: str, body: str, slide_num: int, total: int, s: dict) -> s
         accent=s["accent"],
         gold=s["gold"],
         green=s["green"],
-        card_bg=s["card_bg"],
         code_bg=s["code_bg"],
         code_color=s["code_color"],
         title_size=s["title_size"],
@@ -467,7 +494,7 @@ def _build_html(title: str, body: str, slide_num: int, total: int, s: dict) -> s
         code_size=s["code_size"],
         tag=tag,
         title=html_mod.escape(title),
-        body=body_html,
+        body_html=body_html,
         slide_num=slide_num,
         total_slides=total,
     )
@@ -476,12 +503,10 @@ def _build_html(title: str, body: str, slide_num: int, total: int, s: dict) -> s
 def _get_audio_duration(audio_file: str) -> float:
     try:
         result = subprocess.run(
-            [
-                "ffprobe", "-v", "error",
-                "-show_entries", "format=duration",
-                "-of", "default=noprint_wrappers=1:nokey=1",
-                audio_file,
-            ],
+            ["ffprobe", "-v", "error",
+             "-show_entries", "format=duration",
+             "-of", "default=noprint_wrappers=1:nokey=1",
+             audio_file],
             capture_output=True, text=True, timeout=10,
         )
         return float(result.stdout.strip())
