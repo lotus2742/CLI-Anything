@@ -45,11 +45,14 @@ def render_frames(
     height: int,
     fps: int,
     style: str,
+    audio_file: Optional[str] = None,
+    secs_per_slide: int = 5,
 ) -> dict:
     """Render slides from a text file into per-slide image frames.
 
-    Each slide gets `fps` identical frames (1 second of video per slide by default).
-    The actual duration matches the TTS audio when merged with ffmpeg -shortest.
+    If audio_file is provided, total frames = ceil(audio_duration * fps),
+    distributed evenly across slides.
+    Otherwise each slide gets secs_per_slide * fps frames.
 
     Returns:
         dict with frame_count, slide_count, output_dir
@@ -69,17 +72,36 @@ def render_frames(
     s = STYLES.get(style, STYLES["default"])
     os.makedirs(output_dir, exist_ok=True)
 
-    # Try to load a decent font; fall back to default
+    # Calculate frames per slide
+    if audio_file and os.path.exists(audio_file):
+        audio_duration = _get_audio_duration(audio_file)
+        total_frames = math.ceil(audio_duration * fps)
+        frames_per_slide = max(fps, total_frames // max(len(slides), 1))
+    else:
+        frames_per_slide = secs_per_slide * fps
+
+    # Try to load a CJK-capable font; fall back to default
     font_title: Optional[object] = None
     font_body: Optional[object] = None
     try:
         from PIL import ImageFont
-        # Try common system fonts
-        for font_path in [
+        # Priority: CJK fonts first (support Chinese/Japanese/Korean)
+        cjk_font_paths = [
+            # macOS
+            "/System/Library/Fonts/PingFang.ttc",
+            "/System/Library/Fonts/STHeiti Light.ttc",
+            "/Library/Fonts/Arial Unicode.ttf",
+            "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
+            # Linux
+            "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
+            "/usr/share/fonts/wqy-microhei/wqy-microhei.ttc",
+            "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+            "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+            # Fallback latin-only
             "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-            "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
             "/System/Library/Fonts/Helvetica.ttc",
-        ]:
+        ]
+        for font_path in cjk_font_paths:
             if os.path.exists(font_path):
                 font_title = ImageFont.truetype(font_path, s["title_size"])
                 font_body = ImageFont.truetype(font_path, s["body_size"])
@@ -90,8 +112,7 @@ def render_frames(
     frame_index = 0
     for slide_idx, slide_text in enumerate(slides):
         img = _render_slide(slide_text, width, height, s, font_title, font_body)
-        # Write fps frames for each slide (placeholder timing; real timing = TTS length)
-        for _ in range(fps):
+        for _ in range(frames_per_slide):
             frame_path = os.path.join(output_dir, f"frame_{frame_index:06d}.png")
             img.save(frame_path, "PNG")
             frame_index += 1
@@ -102,6 +123,24 @@ def render_frames(
         "output_dir": output_dir,
         "fps": fps,
     }
+
+
+def _get_audio_duration(audio_file: str) -> float:
+    """Return audio duration in seconds using ffprobe."""
+    import subprocess
+    try:
+        result = subprocess.run(
+            [
+                "ffprobe", "-v", "error",
+                "-show_entries", "format=duration",
+                "-of", "default=noprint_wrappers=1:nokey=1",
+                audio_file,
+            ],
+            capture_output=True, text=True, timeout=10,
+        )
+        return float(result.stdout.strip())
+    except Exception:
+        return 30.0  # fallback: assume 30s
 
 
 def _render_slide(text: str, width: int, height: int, s: dict, font_title, font_body):

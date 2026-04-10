@@ -146,7 +146,7 @@ def process(ctx, input_file, output_path, voice, rate, style, fps, quality, no_t
         click.echo("Step 3/4: Rendering frames...")
         frames_dir = os.path.join(tmpdir, "frames")
         os.makedirs(frames_dir, exist_ok=True)
-        render_frames(slides_path, frames_dir, 1280, 720, fps, style)
+        render_frames(slides_path, frames_dir, 1280, 720, fps, style, audio_file=audio_path)
 
         # Step 4: merge
         click.echo("Step 4/4: Merging video...")
