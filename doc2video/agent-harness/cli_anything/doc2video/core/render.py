@@ -125,13 +125,15 @@ def _render_marp(
     marp_file = str(Path(text_file).with_suffix("")) + ".marp.md"
     Path(marp_file).write_text(content, encoding="utf-8")
 
-    # Run marp --images png
+    # Marp --output is a file *prefix*, not a directory.
+    # e.g. --output /tmp/frames/slide  → /tmp/frames/slide.001, slide.002 ...
+    marp_prefix = os.path.join(output_dir, "slide")
     result = subprocess.run(
         [
             marp_bin,
             marp_file,
             "--images", "png",
-            "--output", output_dir,
+            "--output", marp_prefix,
             "--allow-local-files",
         ],
         capture_output=True,
@@ -141,12 +143,11 @@ def _render_marp(
     if result.returncode != 0:
         raise RuntimeError(f"marp exited {result.returncode}: {result.stderr[:400]}")
 
-    # Marp outputs: <output_dir>/<stem>.001.png, .002.png ...
-    stem = Path(marp_file).stem
-    slide_imgs = sorted(Path(output_dir).glob(f"{stem}.*.png"))
-    if not slide_imgs:
-        # Some marp versions output differently
-        slide_imgs = sorted(Path(output_dir).glob("*.png"))
+    # Marp outputs: slide.001, slide.002 ... (no .png extension in some versions)
+    slide_imgs = sorted(
+        p for p in Path(output_dir).iterdir()
+        if re.match(r"slide\.\d+", p.name)
+    )
 
     if not slide_imgs:
         raise RuntimeError("Marp produced no PNG files")
