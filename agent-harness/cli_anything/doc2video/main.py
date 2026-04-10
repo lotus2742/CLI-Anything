@@ -115,11 +115,12 @@ def tts(ctx, text_file, output_path, voice, rate):
 @click.option("--height", default=720, show_default=True)
 @click.option("--fps", default=24, show_default=True)
 @click.option("--style", type=click.Choice(["default", "dark", "minimal"]), default="default", show_default=True)
+@click.option("--no-marp", "no_marp", is_flag=True, default=False, help="Skip Marp, use high-quality Pillow renderer directly.")
 @click.pass_context
-def render(ctx, text_file, output_dir, width, height, fps, style):
+def render(ctx, text_file, output_dir, width, height, fps, style, no_marp):
     """Render document slides into image frames."""
     json_mode = ctx.obj["json_mode"]
-    result = render_frames(text_file, output_dir, width, height, fps, style)
+    result = render_frames(text_file, output_dir, width, height, fps, style, use_marp=not no_marp)
     output(result, json_mode)
 
 
@@ -146,8 +147,9 @@ def merge(ctx, frames_dir, audio_file, output_path, fps, quality):
 @click.option("--fps", default=24, show_default=True)
 @click.option("--quality", type=click.Choice(["ultra", "high", "medium", "low"]), default="high", show_default=True)
 @click.option("--no-tts", is_flag=True, default=False, help="Skip TTS, produce silent video.")
+@click.option("--no-marp", "no_marp", is_flag=True, default=False, help="Skip Marp, use high-quality Pillow renderer directly.")
 @click.pass_context
-def process(ctx, input_file, output_path, voice, rate, style, fps, quality, no_tts):
+def process(ctx, input_file, output_path, voice, rate, style, fps, quality, no_tts, no_marp):
     """Full pipeline: parse → TTS → render → merge into MP4.
 
     This is the one-shot command for converting a document to a video.
@@ -176,7 +178,7 @@ def process(ctx, input_file, output_path, voice, rate, style, fps, quality, no_t
         click.echo("Step 3/4: Rendering frames...")
         frames_dir = os.path.join(tmpdir, "frames")
         os.makedirs(frames_dir, exist_ok=True)
-        render_frames(slides_path, frames_dir, 1280, 720, fps, style, audio_file=audio_path)
+        render_frames(slides_path, frames_dir, 1280, 720, fps, style, audio_file=audio_path, use_marp=not no_marp)
 
         # Step 4: merge
         click.echo("Step 4/4: Merging video...")

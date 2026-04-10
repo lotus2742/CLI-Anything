@@ -78,20 +78,26 @@ def render_frames(
     style: str,
     audio_file: Optional[str] = None,
     secs_per_slide: int = 5,
+    use_marp: bool = True,
 ) -> dict:
-    """Try Marp → Pillow, return result dict."""
+    """Try Marp → Pillow (vlog-maker quality), return result dict.
+
+    Pass use_marp=False (or --no-marp CLI flag) to skip Marp entirely
+    and use the high-quality Pillow renderer directly.
+    """
     os.makedirs(output_dir, exist_ok=True)
 
-    # 1. Marp CLI (auto-install if npm available)
-    marp_bin = _ensure_marp()
-    if marp_bin:
-        try:
-            return _render_marp(
-                text_file, output_dir, width, height, fps, style, audio_file, secs_per_slide,
-                marp_bin=marp_bin,
-            )
-        except Exception as e:
-            print(f"[render] Marp failed ({e}), falling back to Pillow...")
+    # 1. Marp CLI (skip if use_marp=False)
+    if use_marp:
+        marp_bin = _ensure_marp()
+        if marp_bin:
+            try:
+                return _render_marp(
+                    text_file, output_dir, width, height, fps, style, audio_file, secs_per_slide,
+                    marp_bin=marp_bin,
+                )
+            except Exception as e:
+                print(f"[render] Marp failed ({e}), falling back to Pillow...")
 
     # 2. Pillow (vlog-maker quality renderer)
     return _render_pillow(
