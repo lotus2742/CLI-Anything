@@ -3,7 +3,14 @@
 ## 项目说明
 本项目是 CLI-Anything 生态中的 doc2video harness。
 将文档（docx/md/pdf/txt）转换为带配音的 MP4 视频。
-渲染引擎：**Marp CLI**（专业 Markdown PPT 渲染，无需手写 CSS）。
+
+**渲染模式（二选一，默认用 Pillow）：**
+| 模式 | CLI 参数 | 适用场景 |
+|------|---------|---------|
+| **Pillow**（推荐） | `--no-marp` | 高质量深紫背景，vlog-maker 同款风格 |
+| **Marp** | 不加参数 | 需要 npm 环境，白底主题 |
+
+> ⚠️ **默认使用 `--no-marp`**（Pillow 渲染器），无需 npm，无需 frontmatter CSS。
 
 ---
 
@@ -11,129 +18,25 @@
 
 当用户说"把这个文档做成视频" / "生成视频" / "转视频"时，**严格按以下步骤执行**，不要跳步：
 
-### Step 1：读取并提炼文档
+### Step 1：读取并提炼文档（Pillow 模式）
 
-阅读用户提供的文档，按以下规则生成 `/tmp/slides_<时间戳>.md`：
+阅读用户提供的文档，按以下规则生成 `/tmp/slides_<时间戳>.txt`：
 
-**文件开头必须有 Marp frontmatter（包含完整自定义 CSS，直接复制以下模板）：**
-
-```markdown
----
-marp: true
-theme: default
-paginate: true
-style: |
-  /* ── 全局 ── */
-  section {
-    font-family: 'PingFang SC', 'Microsoft YaHei', 'Hiragino Sans GB', sans-serif;
-    background: #0D1117;
-    color: #CDD9E5;
-    padding: 48px 64px;
-  }
-  /* ── 标题 ── */
-  section h1 {
-    font-size: 1.75em;
-    font-weight: 700;
-    color: #FFFFFF;
-    border-left: 5px solid #58A6FF;
-    padding-left: 18px;
-    margin-bottom: 28px;
-    line-height: 1.3;
-  }
-  /* ── 要点列表 ── */
-  section ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-  section ul li {
-    display: flex;
-    align-items: flex-start;
-    gap: 14px;
-    padding: 10px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.07);
-    font-size: 0.88em;
-    line-height: 1.65;
-    color: #ADBAC7;
-  }
-  section ul li:last-child { border-bottom: none; }
-  section ul li::before {
-    content: '▸';
-    color: #58A6FF;
-    font-size: 1em;
-    flex-shrink: 0;
-    margin-top: 2px;
-  }
-  /* ── 代码块 ── */
-  section code {
-    background: rgba(88,166,255,0.12);
-    color: #79C0FF;
-    padding: 2px 7px;
-    border-radius: 4px;
-    font-size: 0.85em;
-  }
-  section pre {
-    background: #161B22;
-    border: 1px solid #30363D;
-    border-radius: 8px;
-    padding: 16px 20px;
-  }
-  section pre code {
-    background: none;
-    color: #E6EDF3;
-    font-size: 0.82em;
-  }
-  /* ── 页码 ── */
-  section::after {
-    color: rgba(255,255,255,0.25);
-    font-size: 0.7em;
-  }
-  /* ── lead 封面页 / 过渡页 ── */
-  section.lead {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: flex-start;
-    background: linear-gradient(135deg, #0D1117 0%, #161B22 60%, #1C2128 100%);
-  }
-  section.lead h1 {
-    font-size: 2.4em;
-    border-left: 6px solid #58A6FF;
-    padding-left: 24px;
-    color: #FFFFFF;
-    margin-bottom: 20px;
-  }
-  section.lead p {
-    font-size: 1em;
-    color: #8B949E;
-    padding-left: 30px;
-  }
-  /* ── invert 强调页 ── */
-  section.invert {
-    background: #58A6FF;
-    color: #0D1117;
-  }
-  section.invert h1 {
-    color: #0D1117;
-    border-left-color: #0D1117;
-  }
-  section.invert ul li { color: #1C2128; border-bottom-color: rgba(0,0,0,0.12); }
-  section.invert ul li::before { color: #0D1117; }
----
-```
-
-> ⚠️ **必须完整复制上面的 frontmatter**，包括所有 CSS，不能省略或简化。
-> 主题统一用 `default`（自定义 CSS 已覆盖所有视觉），无需切换 `gaia`/`uncover`。
+> ⚠️ **Pillow 模式下不需要 Marp frontmatter，不要写 `---\nmarp: true` 开头**。
+> 文件直接从第一页标题开始。
 
 **内容规则：**
 - 总页数：8-12 页（视频目标时长 6-8 分钟）
-- 第一页：概览/引言（介绍文档主题和结构）
-- 中间页：每页聚焦一个核心概念或要点，**5-8 条要点**（不能只有3条，下半部分不能空着）
-- 最后一页：总结（5-7 条关键结论）
+- 第一页：封面/引言（文档主题 + 一句话概述，无需 bullet）
+- 中间页：每页聚焦一个核心概念，**5-8 条要点**
+- 含「vs/对比/区别」的页：Pillow 自动触发左右两栏布局
+- 最后一页：标题含「总结」或「回顾」，Pillow 自动触发结尾布局
 
 **每页格式（严格遵守）：**
-```markdown
+```
 # 页面标题（一句话，≤ 20 字）
+
+一句话副标题或背景说明（仅封面页第一页需要，其余页省略）
 
 - 要点一（≤ 35 字，口语化，适合 TTS 朗读）
 - 要点二（≤ 35 字）
@@ -147,60 +50,53 @@ style: |
 **写作要求：**
 - 口语化表达，避免堆砌专业术语
 - 每条要点像在"讲给人听"，不是"写给人看"
-- 代码片段用反引号包裹，控制在 1-2 行以内
 - 总文字量控制在 1200-1500 字（对应约 7-8 分钟 TTS）
 - **每页至少 5 条要点**，不足的补充延伸说明或背景信息
+- **不要写 HTML 注释**（`<!-- _class: lead -->`），Pillow 渲染器不支持
 
-**主题选择（LLM 根据内容自主决策，写入 frontmatter）：**
-
-> 用户未指定 `--style` 时，根据文档内容选最合适的主题；用户指定了则以 `--style` 为准。
-
-| 文档类型 | Marp 主题 | 视觉风格 |
-|---------|---------|--------|
-| 技术文档、AI/代码讲解 | `gaia` | 暗色，代码高亮清晰 |
-| 产品介绍、商业报告 | `default` | 清爽白底，通用 |
-| 学术论文、深度解读 | `uncover` | 现代简约，适合图文 |
-| 不确定 | `default` | 最安全的选择 |
-
-**页面排版布局（LLM 根据页面用途自主选择）：**
-
-在每页开头用 HTML 注释指定布局，Marp 会自动应用：
-
-```markdown
-<!-- _class: lead -->
+**完整示例：**
 ```
+# 今天我们聊什么
 
-| 页面用途 | 推荐 class | 效果 |
-|---------|-----------|------|
-| 封面页（第1页） | `lead` | 大字居中，标题突出 |
-| 章节过渡页 | `lead invert` | 反色强调，视觉分隔 |
-| 普通内容页 | 不加（默认） | 标准列表布局 |
-| 重要警告/结论 | `invert` | 反色背景，强调感 |
-| 最后总结页 | `lead` | 大字，收尾有力 |
-
-示例：
-```markdown
-<!-- _class: lead -->
-
-# 今天我们聊什么？
-
-AI Agent 的设计模式与最佳实践
+深入解析 AI Agent 的设计模式与最佳实践
 
 ---
 
-<!-- 普通内容页不需要 class -->
+# 什么是 AI Agent
 
-# 核心概念
+- AI Agent 是一种能自主完成任务的智能系统，不需要人工逐步干预
+- 它的核心能力是：感知环境、做出决策、执行动作
+- 和普通 AI 模型的区别在于：Agent 有记忆、有工具调用能力
+- 典型应用：代码助手、自动化客服、数据分析 Agent
+- 关键组成：LLM 大脑 + Memory 记忆 + Tools 工具 + Planning 规划
 
-- 要点一
-- 要点二
+---
+
+# 记忆系统对比
+
+- 短期记忆 vs 长期记忆：前者是上下文窗口，后者是向量数据库
+- 短期记忆的限制：token 窗口有限，对话一长就丢失早期信息
+- 长期记忆的优势：持久化存储，跨会话保持用户偏好和历史
+- 实现方案：RAG 检索增强 + Embedding 向量化
+- 选型建议：短期任务用短期记忆，个性化产品必须上长期记忆
+
+---
+
+# 核心总结
+
+- AI Agent = 感知 + 决策 + 执行，三要素缺一不可
+- 记忆系统是区分「工具」和「助手」的关键能力
+- Tool Calling 让 Agent 能真正操控外部世界
+- 好的规划能力直接决定 Agent 完成复杂任务的成功率
+- 从今天起，试着把你的工作流包装成一个 Agent
 ```
 
 ### Step 2：生成视频
 
 ```bash
-cli-anything-doc2video process /tmp/slides_<时间戳>.md \
+cli-anything-doc2video process /tmp/slides_<时间戳>.txt \
   -o ./output_<时间戳>.mp4 \
+  --no-marp \
   --voice zh-CN-XiaoxiaoNeural
 ```
 
@@ -219,18 +115,20 @@ cli-anything-doc2video process /tmp/slides_<时间戳>.md \
 - 幻灯片页数
 - 预计时长（页数 × 40 秒，估算值）
 - 预览命令：`open output_<时间戳>.mp4`
+- 渲染器：Pillow（深紫背景，vlog-maker 同款风格）
 
 ---
 
 ## 🔧 CLI 参考
 
 ```bash
-# 基础用法
-cli-anything-doc2video process <文件> -o output.mp4
+# 基础用法（Pillow 高质量渲染，推荐）
+cli-anything-doc2video process <文件> -o output.mp4 --no-marp
 
 # 全参数
 cli-anything-doc2video process <文件> \
   -o output.mp4 \
+  --no-marp \
   --voice <声音ID> \
   --fps 24 \
   --no-tts       # 仅生成无声视频
@@ -254,14 +152,21 @@ cli-anything-doc2video render <文件> --frames-dir /tmp/frames  # 仅渲染帧
    ```bash
    cd doc2video/agent-harness && pip install -e .
    ```
-   Marp CLI 会在首次渲染时**自动安装**（需要 npm），无需手动操作。不需要安装 Playwright。
 
-2. **TTS 需要网络**（调用微软 edge-tts 服务）。离线时加 `--no-tts`。
+2. **`--no-marp` 是默认推荐**：Pillow 渲染无需 npm，深紫背景，vlog-maker 同款视觉。
 
-3. **输出路径用绝对路径**，避免找不到文件。
+3. **TTS 需要网络**（调用微软 edge-tts 服务）。离线时加 `--no-tts`。
 
-4. **文档太长时**先提炼再生成，不要原文照搬。
+4. **输出路径用绝对路径**，避免找不到文件。
 
-5. **slides.md 分页符**是单独一行的 `---`，Marp 用它来分页。
+5. **文档太长时先提炼再生成**，不要原文照搬，每页控制在 5-8 条要点。
 
-6. **frontmatter 的 `---` 不算分页符**，只有 frontmatter 结束后的 `---` 才是分页。
+6. **slides 分页符**是单独一行的 `---`，第一页不需要在开头加 `---`。
+
+7. **Pillow 模式不支持 HTML 注释**（如 `<!-- _class: lead -->`），写了会原样显示在画面上，必须删掉。
+
+8. **布局自动识别规则**：
+   - index=0（第一页）→ 封面布局（大标题居中）
+   - title 含「vs/对比/区别」→ 左右两栏布局
+   - title 含「总结/小结/回顾/结尾」→ 结尾布局（带进度条）
+   - 其余页 → 标准 bullet list 布局
