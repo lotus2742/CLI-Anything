@@ -44,5 +44,14 @@ async def _run_tts(text: str, output_path: str, voice: str, rate: str):
     except ImportError:
         raise RuntimeError("edge-tts is required: pip install edge-tts")
 
-    communicate = edge_tts.Communicate(text, voice, rate=rate)
+    # Pick up system proxy (supports HTTP CONNECT tunnel for WSS)
+    proxy = (
+        os.environ.get("ALL_PROXY")
+        or os.environ.get("HTTPS_PROXY")
+        or os.environ.get("https_proxy")
+        or os.environ.get("HTTP_PROXY")
+        or os.environ.get("http_proxy")
+    )
+
+    communicate = edge_tts.Communicate(text, voice, rate=rate, proxy=proxy)
     await communicate.save(output_path)
