@@ -20,10 +20,16 @@ def parse_document(input_file: str, fmt: str = "slides") -> dict:
         text = _parse_pdf(input_file)
     elif ext in (".md", ".markdown"):
         text = _parse_markdown(input_file)
+    elif ext in (".docx", ".doc"):
+        text = _parse_docx(input_file)
     else:
-        # plain text
-        with open(input_file, encoding="utf-8") as f:
-            text = f.read()
+        # plain text — try utf-8 first, fall back to gbk
+        try:
+            with open(input_file, encoding="utf-8") as f:
+                text = f.read()
+        except UnicodeDecodeError:
+            with open(input_file, encoding="gbk", errors="replace") as f:
+                text = f.read()
 
     if fmt == "slides":
         slides = _split_slides(text)
@@ -36,6 +42,16 @@ def parse_document(input_file: str, fmt: str = "slides") -> dict:
         "content": content,
         "slide_count": len(slides),
     }
+
+
+def _parse_docx(path: str) -> str:
+    try:
+        from docx import Document
+    except ImportError:
+        raise RuntimeError("python-docx is required for .docx parsing: pip install python-docx")
+    doc = Document(path)
+    paragraphs = [p.text for p in doc.paragraphs if p.text.strip()]
+    return "\n\n".join(paragraphs)
 
 
 def _parse_pdf(path: str) -> str:
