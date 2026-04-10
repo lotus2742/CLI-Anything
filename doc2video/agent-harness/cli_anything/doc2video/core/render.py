@@ -92,15 +92,7 @@ def render_frames(
         except Exception as e:
             print(f"[render] Marp failed ({e}), trying Playwright...")
 
-    # 2. Playwright
-    try:
-        return _render_playwright(
-            text_file, output_dir, width, height, fps, style, audio_file, secs_per_slide
-        )
-    except Exception as e:
-        print(f"[render] Playwright failed ({e}), using Pillow fallback...")
-
-    # 3. Pillow
+    # 2. Pillow
     return _render_pillow(
         text_file, output_dir, width, height, fps, style, audio_file, secs_per_slide
     )
@@ -190,109 +182,7 @@ def _style_to_marp_theme(style: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Playwright fallback renderer
-# ---------------------------------------------------------------------------
-
-SLIDE_TEMPLATE = """<!DOCTYPE html>
-<html lang="zh">
-<head>
-<meta charset="UTF-8">
-<style>
-  * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-  html, body {{ width: 1280px; height: 720px; overflow: hidden; }}
-  body {{
-    font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
-                 'Noto Sans CJK SC', sans-serif;
-    background: {bg};
-    position: relative;
-  }}
-  .bar  {{ position: absolute; left: 56px; top: 50px; bottom: 50px; width: 6px; background: {accent}; border-radius: 3px; }}
-  .bar2 {{ position: absolute; left: 68px; top: 50px; bottom: 50px; width: 6px; background: {gold};   border-radius: 3px; }}
-  .tag  {{
-    position: absolute; top: 52px; left: 96px;
-    background: {accent}; color: {bg};
-    font-size: 14px; font-weight: 700; padding: 4px 16px;
-    border-radius: 3px; letter-spacing: 1.5px; white-space: nowrap;
-  }}
-  .title {{
-    position: absolute; top: 100px; left: 96px; right: 72px;
-    font-size: {title_size}px; font-weight: 700; color: {title_color};
-    line-height: 1.35; word-break: break-all; overflow-wrap: break-word;
-    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-  }}
-  .divider {{ position: absolute; top: 196px; left: 96px; right: 72px; height: 1px; background: {accent}; opacity: 0.3; }}
-  .body {{ position: absolute; top: 212px; left: 96px; right: 72px; bottom: 52px; overflow: hidden; }}
-  .body ul {{ list-style: none; padding: 0; margin: 0; }}
-  .body ul li {{
-    display: flex; align-items: flex-start; gap: 12px;
-    padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
-    font-size: {body_size}px; color: {body_color}; line-height: 1.6;
-    word-break: break-all; overflow-wrap: break-word;
-  }}
-  .body ul li:last-child {{ border-bottom: none; }}
-  .body ul li .dot {{ flex-shrink: 0; width: 9px; height: 9px; border-radius: 2px; margin-top: 6px; }}
-  .body ul li:nth-child(3n+1) .dot {{ background: {accent}; }}
-  .body ul li:nth-child(3n+2) .dot {{ background: {gold}; }}
-  .body ul li:nth-child(3n+0) .dot {{ background: {green}; }}
-  .body ul li .text {{ flex: 1; min-width: 0; }}
-  pre {{
-    background: {code_bg}; color: {code_color};
-    padding: 12px 16px; border-radius: 6px;
-    font-size: {code_size}px; font-family: 'JetBrains Mono', 'Fira Code', monospace;
-    line-height: 1.6; margin: 4px 0; word-break: break-all; white-space: pre-wrap;
-  }}
-  .num {{ position: absolute; right: 68px; bottom: 18px; font-size: 12px; color: {body_color}; opacity: 0.28; }}
-</style>
-</head>
-<body>
-  <div class="bar"></div><div class="bar2"></div>
-  <div class="tag">{tag}</div>
-  <div class="title">{title}</div>
-  <div class="divider"></div>
-  <div class="body">{body_html}</div>
-  <div class="num">{slide_num} / {total_slides}</div>
-</body>
-</html>"""
-
-STYLES = {
-    "default": {"bg":"#0A0F2E","title_color":"#FFFFFF","body_color":"#AABBCC","accent":"#00B4D8","gold":"#FFD100","green":"#00E596","code_bg":"#0D1535","code_color":"#00E596","title_size":42,"body_size":23,"code_size":18},
-    "dark":    {"bg":"#0D1117","title_color":"#F0F6FC","body_color":"#8B949E","accent":"#58A6FF","gold":"#F0A040","green":"#3FB950","code_bg":"#161B22","code_color":"#7EE787","title_size":42,"body_size":23,"code_size":18},
-    "minimal": {"bg":"#FAFAFA","title_color":"#111111","body_color":"#444444","accent":"#2563EB","gold":"#D97706","green":"#059669","code_bg":"#F1F5F9","code_color":"#1E40AF","title_size":40,"body_size":22,"code_size":17},
-    "gradient":{"bg":"#0F0C29","title_color":"#FFFFFF","body_color":"#CCCCDD","accent":"#E94560","gold":"#FFB700","green":"#06D6A0","code_bg":"rgba(255,255,255,0.08)","code_color":"#FFA07A","title_size":42,"body_size":23,"code_size":18},
-}
-
-
-def _render_playwright(
-    text_file, output_dir, width, height, fps, style, audio_file, secs_per_slide
-) -> dict:
-    try:
-        from playwright.sync_api import sync_playwright
-    except ImportError:
-        raise RuntimeError("playwright not found")
-
-    slides = _parse_slides(text_file)
-    s = STYLES.get(style, STYLES["default"])
-    frames_per_slide = _calc_frames_per_slide(audio_file, len(slides), fps, secs_per_slide)
-
-    frame_index = 0
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page(viewport={"width": width, "height": height})
-        for idx, (title, body) in enumerate(slides):
-            html = _build_html(title, body, idx + 1, len(slides), s)
-            page.set_content(html, wait_until="domcontentloaded")
-            first = os.path.join(output_dir, f"frame_{frame_index:06d}.png")
-            page.screenshot(path=first, type="png")
-            for i in range(1, frames_per_slide):
-                shutil.copy2(first, os.path.join(output_dir, f"frame_{frame_index+i:06d}.png"))
-            frame_index += frames_per_slide
-        browser.close()
-
-    return {"frame_count": frame_index, "slide_count": len(slides), "output_dir": output_dir, "fps": fps, "renderer": "playwright"}
-
-
-# ---------------------------------------------------------------------------
-# Pillow final fallback
+# Pillow fallback renderer
 # ---------------------------------------------------------------------------
 
 def _render_pillow(
@@ -377,38 +267,6 @@ def _parse_slides(text_file: str) -> list[tuple[str, str]]:
         result.append((title, body))
     return result
 
-
-def _build_html(title: str, body: str, slide_num: int, total: int, s: dict) -> str:
-    import html as html_mod
-
-    tag = "INTRO" if slide_num == 1 else ("SUMMARY" if slide_num == total else f"PART  {slide_num-1:02d}")
-
-    code_blocks: dict[str, str] = {}
-    def extract_code(m):
-        key = f"\x00CODE{len(code_blocks)}\x00"
-        code_blocks[key] = f"<pre>{html_mod.escape(m.group(1))}</pre>"
-        return key
-
-    body_clean = re.sub(r"```(?:\w+)?\n?(.*?)```", extract_code, body, flags=re.DOTALL)
-    lines = [l.strip().lstrip("-*•").strip() for l in body_clean.splitlines() if l.strip()]
-
-    items = ""
-    for line in lines:
-        if line in code_blocks:
-            items += code_blocks[line]
-        else:
-            items += f'<li><span class="dot"></span><span class="text">{html_mod.escape(line)}</span></li>'
-
-    body_html = f"<ul>{items}</ul>" if items else ""
-
-    return SLIDE_TEMPLATE.format(
-        **s,
-        tag=tag,
-        title=html_mod.escape(title),
-        body_html=body_html,
-        slide_num=slide_num,
-        total_slides=total,
-    )
 
 
 def _get_audio_duration(audio_file: str) -> float:
