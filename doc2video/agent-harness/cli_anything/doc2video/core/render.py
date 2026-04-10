@@ -18,21 +18,54 @@ from typing import Optional
 # Public API
 # ---------------------------------------------------------------------------
 
-def _ensure_marp() -> bool:
-    """Return True if marp is available (install silently if not)."""
-    if shutil.which("marp"):
-        return True
+def _find_marp() -> Optional[str]:
+    """Return marp executable path, or None if not found."""
+    # 1. Already in PATH
+    p = shutil.which("marp")
+    if p:
+        return p
+
+    # 2. Look in npm global bin directory
+    try:
+        r = subprocess.run(
+            ["npm", "bin", "-g"], capture_output=True, text=True, timeout=10
+        )
+        npm_bin = r.stdout.strip()
+        if npm_bin:
+            candidate = os.path.join(npm_bin, "marp")
+            if os.path.isfile(candidate):
+                return candidate
+    except Exception:
+        pass
+
+    # 3. Common macOS/Linux paths
+    for candidate in [
+        os.path.expanduser("~/.npm-global/bin/marp"),
+        "/usr/local/bin/marp",
+        "/opt/homebrew/bin/marp",
+    ]:
+        if os.path.isfile(candidate):
+            return candidate
+
+    return None
+
+
+def _ensure_marp() -> Optional[str]:
+    """Return marp path if available, auto-install if npm present."""
+    p = _find_marp()
+    if p:
+        return p
     if not shutil.which("npm"):
-        return False
+        return None
     try:
         print("[render] Installing marp-cli (first run, ~10s)...")
         subprocess.run(
             ["npm", "install", "-g", "@marp-team/marp-cli", "--prefer-offline"],
             capture_output=True, timeout=120, check=True,
         )
-        return bool(shutil.which("marp"))
+        return _find_marp()
     except Exception:
-        return False
+        return None
 
 
 def render_frames(
@@ -49,10 +82,12 @@ def render_frames(
     os.makedirs(output_dir, exist_ok=True)
 
     # 1. Marp CLI (auto-install if npm available)
-    if _ensure_marp():
+    marp_bin = _ensure_marp()
+    if marp_bin:
         try:
             return _render_marp(
-                text_file, output_dir, width, height, fps, style, audio_file, secs_per_slide
+                text_file, output_dir, width, height, fps, style, audio_file, secs_per_slide,
+                marp_bin=marp_bin,
             )
         except Exception as e:
             print(f"[render] Marp failed ({e}), trying Playwright...")
@@ -76,7 +111,8 @@ def render_frames(
 # ---------------------------------------------------------------------------
 
 def _render_marp(
-    text_file, output_dir, width, height, fps, style, audio_file, secs_per_slide
+    text_file, output_dir, width, height, fps, style, audio_file, secs_per_slide,
+    marp_bin: str = "marp",
 ) -> dict:
     """Use marp-cli to render each slide as PNG, then duplicate frames."""
 
@@ -98,7 +134,7 @@ def _render_marp(
     # Run marp --images png
     result = subprocess.run(
         [
-            "marp",
+            marp_bin,
             marp_file,
             "--images", "png",
             "--output", output_dir,
