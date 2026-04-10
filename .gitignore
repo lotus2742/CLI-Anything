@@ -164,6 +164,8 @@
 /wiremock/.*
 /exa/*
 /exa/.*
+/doc2video/*
+/doc2video/.*
 
 # Step 6: ...except agent-harness/
 !/gimp/agent-harness/
@@ -206,6 +208,7 @@
 !/wiremock/
 !/wiremock/agent-harness/
 !/exa/agent-harness/
+!/doc2video/agent-harness/
 
 # Step 7: Ignore build artifacts within allowed dirs
 **/__pycache__/
@@ -242,3 +245,7 @@ assets/gen_typing_gif.py
 !/intelwatch/agent-harness/
 !/intelwatch/
 !/exa/
+!/doc2video/
+*.egg-info/
+__pycache__/
+*.pyc

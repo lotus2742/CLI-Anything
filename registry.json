@@ -1,7 +1,7 @@
 {
   "meta": {
     "repo": "https://github.com/HKUDS/CLI-Anything",
-    "description": "CLI-Hub — Agent-native stateful CLI interfaces for softwares, codebases, and Web Services",
+    "description": "CLI-Hub \u2014 Agent-native stateful CLI interfaces for softwares, codebases, and Web Services",
     "updated": "2026-03-31"
   },
   "clis": [
@@ -9,7 +9,7 @@
       "name": "wiremock",
       "display_name": "WireMock",
       "version": "0.1.0",
-      "description": "HTTP mock server management — create stubs, inspect requests, record traffic, and manage scenarios via WireMock REST API",
+      "description": "HTTP mock server management \u2014 create stubs, inspect requests, record traffic, and manage scenarios via WireMock REST API",
       "requires": "WireMock server running (java -jar wiremock-standalone.jar)",
       "homepage": "https://wiremock.org",
       "install_cmd": "pip install git+https://github.com/HKUDS/CLI-Anything.git#subdirectory=wiremock/agent-harness",
@@ -289,7 +289,7 @@
       "name": "openscreen",
       "display_name": "Openscreen",
       "version": "1.0.0",
-      "description": "Screen recording editor — zoom, speed ramps, trim, crop, annotations, backgrounds, and polished exports via ffmpeg",
+      "description": "Screen recording editor \u2014 zoom, speed ramps, trim, crop, annotations, backgrounds, and polished exports via ffmpeg",
       "requires": "ffmpeg (apt install ffmpeg)",
       "homepage": "https://github.com/siddharthvaddem/openscreen",
       "install_cmd": "pip install git+https://github.com/HKUDS/CLI-Anything.git#subdirectory=openscreen/agent-harness",
@@ -345,7 +345,7 @@
       "name": "pm2",
       "display_name": "PM2",
       "version": "1.0.0",
-      "description": "Node.js process management — list, start, stop, restart, logs, and metrics via PM2 CLI",
+      "description": "Node.js process management \u2014 list, start, stop, restart, logs, and metrics via PM2 CLI",
       "requires": "PM2 (npm install -g pm2)",
       "homepage": "https://pm2.keymetrics.io",
       "install_cmd": "pip install git+https://github.com/HKUDS/CLI-Anything.git#subdirectory=pm2/agent-harness",
@@ -359,7 +359,7 @@
       "name": "chromadb",
       "display_name": "ChromaDB",
       "version": "1.0.0",
-      "description": "Vector database operations — collections, documents, semantic search via ChromaDB HTTP API",
+      "description": "Vector database operations \u2014 collections, documents, semantic search via ChromaDB HTTP API",
       "requires": "ChromaDB server running at localhost:8000",
       "homepage": "https://www.trychroma.com",
       "install_cmd": "pip install git+https://github.com/HKUDS/CLI-Anything.git#subdirectory=chromadb/agent-harness",
@@ -373,7 +373,7 @@
       "name": "musescore",
       "display_name": "MuseScore",
       "version": "1.0.0",
-      "description": "CLI for music notation — transpose, export PDF/audio/MIDI, extract parts, manage instruments",
+      "description": "CLI for music notation \u2014 transpose, export PDF/audio/MIDI, extract parts, manage instruments",
       "requires": "MuseScore 4 (musescore.org)",
       "homepage": "https://musescore.org",
       "install_cmd": "pip install git+https://github.com/HKUDS/CLI-Anything.git#subdirectory=musescore/agent-harness",
@@ -415,7 +415,7 @@
       "name": "iterm2",
       "display_name": "iTerm2",
       "version": "1.0.0",
-      "description": "Control a running iTerm2 instance — manage windows, tabs, split panes, send text, read output, run tmux -CC, broadcast keystrokes, and configure preferences.",
+      "description": "Control a running iTerm2 instance \u2014 manage windows, tabs, split panes, send text, read output, run tmux -CC, broadcast keystrokes, and configure preferences.",
       "requires": "iTerm2.app (macOS only)",
       "homepage": "https://iterm2.com",
       "install_cmd": "pip install git+https://github.com/HKUDS/CLI-Anything.git#subdirectory=iterm2/agent-harness",
@@ -471,7 +471,7 @@
       "name": "videocaptioner",
       "display_name": "VideoCaptioner",
       "version": "1.0.0",
-      "description": "AI-powered video captioning — transcribe speech, optimize/translate subtitles, burn styled subtitles into video",
+      "description": "AI-powered video captioning \u2014 transcribe speech, optimize/translate subtitles, burn styled subtitles into video",
       "requires": "videocaptioner (pip install videocaptioner), ffmpeg",
       "homepage": "https://github.com/WEIFENG2333/VideoCaptioner",
       "install_cmd": "pip install git+https://github.com/HKUDS/CLI-Anything.git#subdirectory=videocaptioner/agent-harness",
@@ -569,7 +569,7 @@
       "name": "cloudanalyzer",
       "display_name": "CloudAnalyzer",
       "version": "1.0.0",
-      "description": "Point cloud and trajectory QA: Chamfer/AUC/F1, ATE/RPE/drift, ground segmentation metrics, config-driven quality gates, baseline evolution — harness wraps the CloudAnalyzer Python API",
+      "description": "Point cloud and trajectory QA: Chamfer/AUC/F1, ATE/RPE/drift, ground segmentation metrics, config-driven quality gates, baseline evolution \u2014 harness wraps the CloudAnalyzer Python API",
       "requires": "Python 3.10+; cloudanalyzer (`pip install cloudanalyzer`), Open3D for full IO/viewer paths",
       "homepage": "https://github.com/rsasaki0109/CloudAnalyzer",
       "install_cmd": "pip install git+https://github.com/HKUDS/CLI-Anything.git#subdirectory=cloudanalyzer/agent-harness",
@@ -578,6 +578,17 @@
       "category": "graphics",
       "contributor": "rsasaki0109",
       "contributor_url": "https://github.com/rsasaki0109"
+    },
+    {
+      "name": "doc2video",
+      "display_name": "Doc2Video",
+      "version": "1.0.0",
+      "description": "Convert documents (text, PDF, Markdown) to narrated MP4 videos with TTS voiceover",
+      "requires": "ffmpeg",
+      "install_cmd": "pip install git+https://github.com/lotus2742/CLI-Anything.git#subdirectory=doc2video",
+      "entry_point": "cli-anything-doc2video",
+      "skill_md": "doc2video/cli_anything/doc2video/skills/SKILL.md",
+      "category": "video"
     }
   ]
 }
