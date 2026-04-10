@@ -110,8 +110,10 @@ def _render_marp(
 
     # Marp requires .md extension — always write to a temp .md file
     src = Path(text_file).read_text(encoding="utf-8")
-    theme = _style_to_marp_theme(style)
+
     if not src.strip().startswith("---"):
+        # No frontmatter: inject one using style → theme mapping
+        theme = _style_to_marp_theme(style)
         frontmatter = (
             f"---\nmarp: true\ntheme: {theme}\npaginate: true\n"
             "style: |\n  section {\n"
@@ -119,7 +121,19 @@ def _render_marp(
             "'Hiragino Sans GB', sans-serif;\n  }\n---\n\n"
         )
         content = frontmatter + src
+    elif style != "default":
+        # LLM already wrote frontmatter; only override theme if user explicitly
+        # passed --style (i.e., style is not the default "default")
+        theme = _style_to_marp_theme(style)
+        content = re.sub(
+            r"(^---\n.*?theme:\s*)\S+",
+            lambda m: m.group(1) + theme,
+            src,
+            count=1,
+            flags=re.DOTALL,
+        )
     else:
+        # LLM wrote frontmatter, no --style override → respect LLM's choice
         content = src
 
     marp_file = str(Path(text_file).with_suffix("")) + ".marp.md"
